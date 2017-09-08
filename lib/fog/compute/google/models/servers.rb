@@ -16,6 +16,25 @@ module Fog
           load(data)
         end
 
+        # monkey patch get to search by instance id (the default get searches by instance name)
+        def get_by_id(identity, zone = nil)
+          return nil if identity.blank?
+          response = nil
+          if zone
+            response = service.get_server(identity, zone).body
+          else
+            servers = service.list_aggregated_servers(:filter => "id eq '#{identity}'").body["items"]
+            server = servers.each_value.select { |zone| zone.key?("instances") }
+
+            # It can only be 1 server with the same name across all regions
+            response = server.first["instances"].first unless server.empty?
+          end
+          return nil if response.nil?
+          new(response)
+        rescue Fog::Errors::NotFound
+          nil
+        end
+
         def get(identity, zone = nil)
           response = nil
           if zone
