@@ -111,12 +111,6 @@ module Fog
         end
 
         def handle_networks(options, zone_name)
-          Rails.logger("*"*72)
-          Rails.logger("*"*72)
-          Rails.logger("Monkey Patch Google Fog")
-          Rails.logger(ap(options))
-          Rails.logger("*"*72)
-          Rails.logger("*"*72)
           # handle multiple nics, the base handles only one
           network_interfaces = []
           network = if options.key? "network"
