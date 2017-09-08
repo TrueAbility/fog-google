@@ -110,42 +110,61 @@ module Fog
           disks
         end
 
-        def handle_networks(options, region_name)
-          # Only one access config, ONE_TO_ONE_NAT, is supported per instance.
-          # If there are no accessConfigs specified, then this instance will have no external internet access.
-          access_config = { "type" => "ONE_TO_ONE_NAT", "name" => "External NAT" }
-          # If natIP is undefined VM will get an IP from a shared ephemeral IP address pool
-          if options.key? "externalIp"
-            access_config["natIP"] = options.delete "externalIp"
-            # If :external_ip is set to 'false', do not allow _any_ external networking
-            access_config = nil if access_config["natIP"] == false
-          end
+        def handle_networks(options, zone_name)
+          Rails.logger("*"*72)
+          Rails.logger("*"*72)
+          Rails.logger("Monkey Patch Google Fog")
+          Rails.logger(ap(options))
+          Rails.logger("*"*72)
+          Rails.logger("*"*72)
+          # handle multiple nics, the base handles only one
+          network_interfaces = []
+          network = if options.key? "network"
+                      options.delete "network"
+                    else
+                      GOOGLE_COMPUTE_DEFAULT_NETWORK
+                    end
+          networks = Array(network)
+          networks.each_with_index do |network, i|
 
-          # If no networking options are specified, assume default network
-          if options.key? "network"
-            network = options.delete "network"
-          else
-            network = GOOGLE_COMPUTE_DEFAULT_NETWORK
-          end
+            network_interface = {}
+            # Only one access config, ONE_TO_ONE_NAT, is supported per instance.
+            # If there are no accessConfigs specified, then this instance will have no external internet access.
 
-          # Objectify the network if needed
-          unless network.is_a?(Network)
-            network = networks.get(network)
-          end
+            # To maintain backwards compatibility, give all the options to the first network item
+            if i.zero?
+              access_config = { "type" => "ONE_TO_ONE_NAT", "name" => "External NAT" }
+              if options.key? "externalIP"
+                access_config["natIP"] = options.delete "externalIp"
+                # If :external_ip is set to 'false', do not allow _any_ external networking
+                access_config = nil if access_config["natIP"] == false
+              end
 
-          network_interfaces = network.get_as_interface_config(access_config)
+              if options.key? "subnetwork"
+                subnetwork = options.delete "subnetwork"
 
-          if options.key? "subnetwork"
-            subnetwork = options.delete "subnetwork"
-            # Objectify the subnetwork if needed
-            unless subnetwork.is_a?(Subnetwork)
-              subnetwork = subnetworks.get(subnetwork, region_name)
+                # Objectify the subnetwork if needed
+                unless subnetwork.is_a? Subnetwork
+                  subnetwork = subnetworks.get(subnetwork, "europe-west1") #todo zone_name split
+                end
+
+                network_interface["subnetwork"] = subnetwork.get_self_link_attr()
+              end
+
+              network_interface["accessConfigs"] = [access_config] if access_config
+            end # End of first entry
+
+            # Objectify the network if needed
+            unless network.is_a? Network
+              network = networks.get(network)
             end
-            network_interfaces = subnetwork.update_interface_config(network_interfaces)
-          end
+            network_interface = { "network" => network.self_link() }
+
+            network_interfaces << network_interface
+          end # end of networks
 
           # Return a networkInterfaces array
-          [network_interfaces]
+          network_interfaces
         end
 
         def format_metadata(metadata)
