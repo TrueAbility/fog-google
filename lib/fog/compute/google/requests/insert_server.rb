@@ -118,8 +118,7 @@ module Fog
                     else
                       GOOGLE_COMPUTE_DEFAULT_NETWORK
                     end
-          networks = Array(network)
-          networks.each_with_index do |n, i|
+          Array(network).each_with_index do |n, i|
 
             network_interface = {}
             # Only one access config, ONE_TO_ONE_NAT, is supported per instance.
@@ -154,7 +153,7 @@ module Fog
             end
             network_interface = { "network" => n.self_link() }
             network_interfaces << network_interface
-          end # end of networks
+          end # end
 
           # Return a networkInterfaces array
           network_interfaces
