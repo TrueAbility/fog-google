@@ -110,48 +110,53 @@ module Fog
           disks
         end
 
+        # converts old options to new options
+        def convert_old_network_options(options)
+          if options.key?("network") && options[:network].is_a?(Array)
+            options["network"]
+          else
+            [options]
+          end
+        end
+
+
         def handle_networks(options, zone_name)
-          # handle multiple nics, the base handles only one
+          network_options = convert_old_network_options
           network_interfaces = []
-          network = if options.key? "network"
-                      options.delete "network"
-                    else
-                      GOOGLE_COMPUTE_DEFAULT_NETWORK
-                    end
-          Array(network).each_with_index do |n, i|
 
-            network_interface = {}
-            # Only one access config, ONE_TO_ONE_NAT, is supported per instance.
-            # If there are no accessConfigs specified, then this instance will have no external internet access.
-
-            # To maintain backwards compatibility, give all the options to the first network item
-            if i.zero?
-              access_config = { "type" => "ONE_TO_ONE_NAT", "name" => "External NAT" }
-              if options.key? "externalIP"
-                access_config["natIP"] = options.delete "externalIp"
-                # If :external_ip is set to 'false', do not allow _any_ external networking
-                access_config = nil if access_config["natIP"] == false
-              end
-
-              if options.key? "subnetwork"
-                subnetwork = options.delete "subnetwork"
-
-                # Objectify the subnetwork if needed
-                unless subnetwork.is_a? Subnetwork
-                  subnetwork = subnetworks.get(subnetwork, "europe-west1") #todo zone_name split
-                end
-
-                network_interface["subnetwork"] = subnetwork.get_self_link_attr()
-              end
-
-              network_interface["accessConfigs"] = [access_config] if access_config
-            end # End of first entry
+          network_options.each do |options|
+            network = if options.key? "network"
+                        options.delete "network"
+                      else
+                        GOOGLE_COMPUTE_DEFAULT_NETWORK
+                      end
 
             # Objectify the network if needed
-            unless n.is_a? Network
-              n = networks.get(n)
+            unless network.is_a? Network
+              network = networks.get(n)
             end
-            network_interface = { "network" => n.self_link() }
+            network_interface = { "network" => network.self_link() }
+
+            access_config = { "type" => "ONE_TO_ONE_NAT", "name" => "External NAT" }
+            if options.key? "externalIP"
+              access_config["natIP"] = options.delete "externalIp"
+              # If :external_ip is set to 'false', do not allow _any_ external networking
+              access_config = nil if access_config["natIP"] == false
+            end
+
+            if options.key? "subnetwork"
+              subnetwork = options.delete "subnetwork"
+
+              # Objectify the subnetwork if needed
+              unless subnetwork.is_a? Subnetwork
+                region = zone_name.split("-")[0..1].join("-")
+                subnetwork = subnetworks.get(subnetwork, region)
+              end
+
+              network_interface["subnetwork"] = subnetwork.get_self_link_attr()
+            end
+
+            network_interface["accessConfigs"] = [access_config] if access_config
             network_interfaces << network_interface
           end # end
 
