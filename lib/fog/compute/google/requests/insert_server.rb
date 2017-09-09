@@ -121,7 +121,7 @@ module Fog
 
 
         def handle_networks(options, zone_name)
-          network_options = convert_old_network_options
+          network_options = convert_old_network_options(options)
           network_interfaces = []
 
           network_options.each do |options|
