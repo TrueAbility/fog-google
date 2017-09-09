@@ -155,7 +155,7 @@ module Fog
                 subnetwork = subnetworks.get(subnetwork, region)
               end
 
-              network_interface["subnetwork"] = subnetwork.get_self_link_attr()
+              network_interface["subnetwork"] = subnetwork.self_link()
             end
 
             network_interface["accessConfigs"] = [access_config] if access_config
