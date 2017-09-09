@@ -125,6 +125,7 @@ module Fog
           network_interfaces = []
 
           network_options.each do |options|
+            puts ap options
             network = if options.key? "network"
                         options.delete "network"
                       else
