@@ -112,8 +112,8 @@ module Fog
 
         # converts old options to new options
         def convert_old_network_options(options)
-          if options.key?("network") && options[:network].is_a?(Array)
-            networks = options.delete("network") # it will cause an error later if left in place
+          if options.key?("networkz") && options["networkz"].is_a?(Array)
+            networks = options.delete("networkz") # it will cause an error later if left in place
             networks
           else
             [options]
