@@ -134,7 +134,7 @@ module Fog
 
             # Objectify the network if needed
             unless network.is_a? Network
-              network = networks.get(n)
+              network = networks.get(network)
             end
             network_interface = { "network" => network.self_link() }
 
